@@ -1,33 +1,41 @@
 module Blueprints
 
-export B, CachedB, Blueprint, construct
+export B, CachedB, CachedBlueprint, Blueprint, construct, make_opaque
 
 using JLD2
+using CodecBzip2
 
-struct Blueprint
+abstract type AbstractBlueprint end
+
+struct Blueprint <: AbstractBlueprint
     func::Any
     args::Vector
     params::Vector{Pair{Symbol,Any}}
+    identifier::Any
 end
+
+Blueprint(func, args::AbstractVector, params::AbstractVector) =
+    Blueprint(func, args, params, nothing)
 
 B(func, args...; params...) = Blueprint(func, collect(args), collect(params))
 
-struct CachedBlueprint
+struct CachedBlueprint <: AbstractBlueprint
     filename::String
     groupname::String
-    func::Any
-    args::Vector{Any}
-    params::Vector{Pair{Symbol,Any}}
+    blueprint::Blueprint
 end
 CachedB((filename, groupname)::NTuple{2,AbstractString}, func, args...; params...) =
-    CachedBlueprint(filename, groupname, func, collect(args), collect(params))
+    CachedBlueprint(filename, groupname, Blueprint(func, collect(args), collect(params)))
 CachedB(filename::AbstractString, func, args...; params...) = CachedBlueprint(
     filename,
     default_groupname(func, args, params),
-    func,
-    collect(args),
-    collect(params),
+    Blueprint(func, collect(args), collect(params)),
 )
+
+CachedB((filename, groupname)::NTuple{2,AbstractString}, bp::Blueprint) =
+    CachedBlueprint(filename, groupname, Blueprint(bp.func, bp.args, bp.params))
+CachedB(filename::AbstractString, bp::Blueprint) =
+    CachedBlueprint(filename, default_groupname(bp), bp)
 
 Base.getindex(bp::Blueprint, idx::Integer) = bp.args[idx]
 function Base.getindex(bp::Blueprint, name::Symbol)
@@ -40,10 +48,28 @@ function Base.getindex(bp::Blueprint, name::Symbol)
     return bp.params[idx][2]
 end
 
-function default_groupname(func, args, params)
-    kwargs = isempty(params) ? "" : ";" * join(("$k=$v" for (k, v) in params), ",")
+make_opaque(bp::Blueprint, func, args...; params...) = Blueprint(
+    bp.func,
+    bp.args,
+    bp.params,
+    (; func, args = collect(args), params = collect(params)),
+)
 
-    groupname = "$func($(join(string.(args), ","))$kwargs)"
+default_groupname(x) = repr(x)
+default_groupname(bp::CachedBlueprint) = default_groupname(bp.blueprint)
+default_groupname(bp::Blueprint) =
+    default_groupname(bp.func, bp.args, bp.params, bp.identifier)
+
+function default_groupname(func, args, params, identifier = nothing)
+    if !isnothing(identifier)
+        return default_groupname(identifier.func, identifier.args, identifier.params)
+    end
+
+    kwargs =
+        isempty(params) ? "" :
+        ";" * join(("$k=$(default_groupname(v))" for (k, v) in params), ",")
+
+    groupname = "$(func)($(join(string.(args), ","))$kwargs)"
 
     if length(groupname) > 1000 || contains(groupname, '/')
         groupname = string(hash((func, args, params)))
@@ -51,13 +77,8 @@ function default_groupname(func, args, params)
     return groupname
 end
 
-
 get_cache(x) = nothing
 get_cache(bp::CachedBlueprint) = (bp.filename, bp.groupname)
-
-function load_from_cache(bp::CachedBlueprint)
-    return load(bp.filename, bp.groupname)
-end
 
 
 struct DependencyGraph
@@ -122,16 +143,17 @@ function topological_sort(deps::AbstractVector{<:AbstractVector})
 end
 
 
-function construct(
-    graph::DependencyGraph,
-    until_stage::Integer;
-    map_func = map,
-    copy = true,
-)
+function construct(graph::DependencyGraph; map_func = map, copy = true, readonly = false)
     graph = use_cache_loads(graph)
     stages = topological_sort(graph.dependencies)
-    graph = trim_unused(graph, stages[min(length(stages), until_stage)])
+    graph = trim_unused(graph, length(graph.dependencies))
     stages = topological_sort(graph.dependencies)
+
+    if readonly && any(!isnothing, graph.caches)
+        error(
+            "Attempted construct with readonly=true, but not all caches are built:\n$(join(filter(!isnothing, graph.caches)))",
+        )
+    end
 
     results = Vector{Any}(undef, length(graph.constructors))
     stages = topological_sort(graph.dependencies)
@@ -139,7 +161,7 @@ function construct(
     maybecopy = copy ? deepcopy : identity
 
     function apply_constructor(i)
-        return graph.constructors[i](view(results, graph.dependencies[i]))
+        return graph.constructors[i](maybecopy(view(results, graph.dependencies[i])))
     end
 
     for stage in stages
@@ -155,11 +177,7 @@ function construct(
         end
     end
 
-    return results[stages[end]]
-end
-
-function construct(graph::DependencyGraph; kwargs...)
-    return construct(graph, length(graph.dependencies); kwargs...)[end]
+    return results[stages[end][end]]
 end
 
 
@@ -171,10 +189,10 @@ end
 construct(x) = construct(B(identity, x))
 
 
-function open_cachefiles(func, caches, mode)
+function open_cachefiles(func, caches, mode; kwargs...)
     cachefiles = [cache[1] for cache in caches if !isnothing(cache)]
     files = Dict(
-        filename => jldopen(filename, mode, compress = true) for
+        filename => jldopen(filename, mode, compress = Bzip2Compressor(); kwargs...) for
         filename in unique(cachefiles)
     )
 
@@ -192,7 +210,7 @@ function validate_caches(caches::AbstractVector)
 
     existing_files = findall(cache -> !isnothing(cache) && isfile(cache[1]), caches)
 
-    open_cachefiles(caches[existing_files], "r") do files
+    open_cachefiles(caches[existing_files], "r"; parallel_read = true) do files
         for i in existing_files
             filename, groupname = caches[i]
             valid[i] = haskey(files, filename) && haskey(files[filename], groupname)
@@ -204,24 +222,17 @@ end
 function use_cache_loads(graph::DependencyGraph)
     cache_validity = validate_caches(graph.caches)
 
-    deps = map(
-        (cache, cache_valid, childdeps) ->
-            isnothing(cache) || !cache_valid ? childdeps : UInt64[],
-        graph.caches,
-        cache_validity,
-        graph.dependencies,
-    )
-    constructors = map(
-        (cache, cache_valid, constructor) ->
-            isnothing(cache) || !cache_valid ? constructor : xs -> load(cache[1], cache[2]),
-        graph.caches,
-        cache_validity,
-        graph.constructors,
-    )
-    caches =
-        [valid ? nothing : cache for (valid, cache) in zip(cache_validity, graph.caches)]
+    newgraph = deepcopy(graph)
+    for (i, (cache, cache_valid)) in enumerate(zip(graph.caches, cache_validity))
+        if cache_valid
+            load_cache(xs) = load(cache[1], cache[2])
+            newgraph.dependencies[i] = UInt64[]
+            newgraph.caches[i] = nothing
+            newgraph.constructors[i] = load_cache
+        end
+    end
 
-    return DependencyGraph(constructors, caches, deps)
+    return newgraph
 end
 
 function trim_unused(deps, finals)
@@ -257,39 +268,27 @@ function trim_unused(graph::DependencyGraph, finals)
 end
 
 dependencies(x) = [], Returns(x)
+
 function dependencies(x::AbstractArray)
-    depsconstructors = dependencies.(x)
-
-    deps = map(first, depsconstructors)
-    constructors = map(last, depsconstructors)
-
-    dep_lengths = length.(deps)
-
-    function constructor(xs)
-        idx = 0
-        args = map(len -> view(xs, idx+1:(idx+=len)), dep_lengths)
-
-        return [c(arg) for (c, arg) in zip(constructors, args)]
-    end
-
-    return reduce(vcat, deps), constructor
+    shape = size(x)
+    return vec(x), y -> collect(reshape(y, shape))
 end
 
 function dependencies(x::AbstractDict)
-    keydeps, keyconstructor = dependencies(collect(keys(x)))
-    valuedeps, valueconstructor = dependencies(collect(values(x)))
+    keycount = length(keys(x))
 
     function constructor(xs)
-        keyxs = keyconstructor(view(xs, 1:length(keydeps)))
-        valuexs = valueconstructor(view(xs, length(keydeps)+1:length(xs)))
+        keyxs = view(xs, 1:keycount)
+        valuexs = view(xs, keycount+1:length(xs))
 
         return Dict((k => v for (k, v) in zip(keyxs, valuexs)))
     end
-
-    return vcat(keydeps, valuedeps), constructor
+    return vcat(collect(keys(x)), collect(values(x))), constructor
 end
 
-function dependencies(bp::Union{CachedBlueprint,Blueprint})
+dependencies(bp::CachedBlueprint) = dependencies(bp.blueprint)
+
+function dependencies(bp::Blueprint)
     deps = vcat(collect(bp.args), collect(last.(bp.params)))
 
     param_keys = first.(bp.params)
@@ -306,6 +305,7 @@ function dependencies(bp::Union{CachedBlueprint,Blueprint})
     return deps, constructor
 end
 
+
 function Base.show(io::IO, ::MIME"text/plain", g::DependencyGraph)
     stages = topological_sort(g.dependencies)
 
@@ -315,7 +315,7 @@ function Base.show(io::IO, ::MIME"text/plain", g::DependencyGraph)
         for j in stage
             constructor = g.constructors[j]
             if constructor isa Returns
-                name = constructor()
+                name = repr(constructor())
             elseif hasproperty(constructor, :f)
                 name = constructor.f
             else

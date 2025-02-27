@@ -3,10 +3,22 @@ module BlueprintsJSONExt
 using Blueprints
 using JSON
 
-JSON.lower(bp::Blueprint) = merge(
-    Dict("func" => string(bp.func)),
-    Dict(i => arg for (i, arg) in enumerate(bp.args)),
-    Dict(key => value for (key, value) in bp.params),
+function JSON.lower(bp::Blueprint)
+    if !isnothing(bp.identifier)
+        return JSON.lower(
+            Blueprint(bp.identifier.func, bp.identifier.args, bp.identifier.params),
+        )
+    end
+    return merge(
+        Dict("func" => string(bp.func)),
+        Dict(i => arg for (i, arg) in enumerate(bp.args)),
+        Dict(key => value for (key, value) in bp.params),
+    )
+end
+
+JSON.lower(bp::CachedBlueprint) = merge(
+    Dict("filename" => bp.filename, "groupname" => bp.groupname),
+    JSON.lower(bp.blueprint),
 )
 
 end

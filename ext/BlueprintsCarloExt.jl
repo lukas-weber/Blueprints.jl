@@ -16,8 +16,6 @@ end
 function Blueprints.dependencies(job::JobInfo)
     taskdeps, taskconstructor = Blueprints.dependencies(job.tasks)
 
-    deps = mapreduce(first, vcat, taskdeps)
-
     function constructor(xs)
         return JobInfo(
             job.name,

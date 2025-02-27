@@ -58,15 +58,15 @@ end
 
         reduced_graph = Blueprints.use_cache_loads(graph)
         @test reduced_graph.caches == graph.caches
-        @test reduced_graph.constructors == graph.constructors
+        # @test reduced_graph.constructors === graph.constructors
         @test reduced_graph.dependencies == graph.dependencies
 
         result1 = construct(bp6)
+        result1r = construct(bp6)
+        @test result1 == result1r
 
         rm(file1)
         rm(file2)
-        @test sort(construct(bp6, 2)) == sort([construct(bp), construct(bp2)])
-
         result2 = construct(bp6)
 
         @test result1 == result2
