@@ -182,12 +182,12 @@ function construct(graph::DependencyGraph; map_func = map, copy = true, readonly
 end
 
 
-function construct(bp::Union{Blueprint,CachedBlueprint}, args...; kwargs...)
+function construct(bp::Union{Blueprint,CachedBlueprint}; kwargs...)
     graph = DependencyGraph(bp)
-    return construct(graph, args...; kwargs...)
+    return construct(graph; kwargs...)
 end
 
-construct(x) = construct(B(identity, x))
+construct(x; kwargs...) = construct(B(identity, x); kwargs...)
 
 
 function open_cachefiles(func, caches, mode; kwargs...)
