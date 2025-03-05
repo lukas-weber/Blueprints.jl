@@ -306,6 +306,17 @@ function dependencies(bp::Blueprint)
     return deps, constructor
 end
 
+function Base.show(io::IO, ::MIME"text/plain", bp::Blueprint)
+    graph = DependencyGraph(bp)
+    print(io, "Blueprint with ")
+    show(io, MIME"text/plain"(), graph)
+end
+
+function Base.show(io::IO, ::MIME"text/plain", bp::CachedBlueprint)
+    graph = DependencyGraph(bp)
+    print(io, "CachedBlueprint saving to\n$(bp.filename):$(bp.groupname)\nwith ")
+    show(io, MIME"text/plain"(), graph)
+end
 
 function Base.show(io::IO, ::MIME"text/plain", g::DependencyGraph)
     stages = topological_sort(g.dependencies)
