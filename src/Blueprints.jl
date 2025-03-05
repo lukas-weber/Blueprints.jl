@@ -158,17 +158,18 @@ function construct(graph::DependencyGraph; map_func = map, copy = true, readonly
     results = Vector{Any}(undef, length(graph.constructors))
     stages = topological_sort(graph.dependencies)
 
-    maybecopy = copy ? deepcopy : identity
-
-    function apply_constructor(i)
-        return graph.constructors[i](maybecopy(view(results, graph.dependencies[i])))
-    end
-
     for stage in stages
-        view(results, stage) .= map_func(apply_constructor, stage)
+        constructors = graph.constructors[stage]
+        args = [results[graph.dependencies[i]] for i in stage]
+
+        if copy
+            args = deepcopy(args)
+        end
+
+        view(results, stage) .= map_func(fas -> fas[1](fas[2]), zip(constructors, args))
 
         open_cachefiles(view(graph.caches, stage), "a+") do files
-            for (cache, result) in zip(view(graph.caches, stage), view(results, stage))
+            for (cache, result) in zip(graph.caches[stage], results[stage])
                 if !isnothing(cache)
                     filename, groupname = cache
                     files[filename][groupname] = result
