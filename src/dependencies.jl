@@ -4,7 +4,7 @@
 
 Returns the dependencies of `x` as a tuple of a vector `deps` and a constructor `f` so that `f(deps) == x`.
 
-Defining this method allows [`construct`](@ref)ing `x` transparently: If any of the dependencies are [`Blueprint`](@ref)s, they will be recursively constructed before the whole type is. For example, constructing an array of blueprints will return an array of constructed blueprints.
+Defining this method for a custom type allows to [`construct`](@ref) `x` transparently: If any of the dependencies are [`Blueprint`](@ref)s, they will be recursively constructed before the whole type is. For example, constructing an array of blueprints will return an array of constructed blueprints.
 """
 function dependencies end
 
