@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Blueprints.jl · Blueprints</title><meta name="title" content="Blueprints.jl · Blueprints"/><meta property="og:title" content="Blueprints.jl · Blueprints"/><meta property="twitter:title" content="Blueprints.jl · Blueprints"/><meta name="description" content="Documentation for Blueprints."/><meta property="og:description" content="Documentation for Blueprints."/><meta property="twitter:description" content="Documentation for Blueprints."/><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="search_index.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="index.html">Blueprints</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li class="is-active"><a class="tocitem" href="index.html">Blueprints.jl</a><ul class="internal"><li><a class="tocitem" href="#Nesting"><span>Nesting</span></a></li><li><a class="tocitem" href="#Serialization"><span>Serialization</span></a></li><li><a class="tocitem" href="#Caching"><span>Caching</span></a></li><li><a class="tocitem" href="#Parallel-construction"><span>Parallel construction</span></a></li></ul></li><li><a class="tocitem" href="api.html">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href="index.html">Blueprints.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="index.html">Blueprints.jl</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/lukas-weber/Blueprints.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/lukas-weber/Blueprints.jl/blob/main/docs/src/index.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Blueprints.jl"><a class="docs-heading-anchor" href="#Blueprints.jl">Blueprints.jl</a><a id="Blueprints.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Blueprints.jl" title="Permalink"></a></h1><p>Blueprints.jl implements thunks that are <strong>serializable</strong>, constructable in <strong>parallel</strong> using <strong>memoization</strong> and <strong>caching</strong>.</p><pre><code class="language-julia hljs">using Blueprints
+
+blueprint = B(+, 1, 2)
+result = construct(blueprint)
+
+# output
+3</code></pre><p>This makes them a useful building block for reproducible data workflows.</p><h2 id="Nesting"><a class="docs-heading-anchor" href="#Nesting">Nesting</a><a id="Nesting-1"></a><a class="docs-heading-anchor-permalink" href="#Nesting" title="Permalink"></a></h2><p>Blueprints can be nested.</p><pre><code class="language-julia hljs">initialize_matrix(n,m; factor = 1) = factor * reshape(1:n*m, n, m)
+
+a = B(initialize_matrix, 3, 3)
+b = B(initialize_matrix, 3, 1; factor = 1/2)
+
+blueprint = B(*, a, b)
+result = construct(blueprint)</code></pre><p>During construction intermediate results are automatically reused in construction if their blueprints are identical (as defined by <code>===</code>).</p><pre><code class="language-julia hljs">function initialize_matrix(n,m; factor = 1)
+    println(&quot;call $n, $m&quot;)
+    return factor * reshape(1:n*m, n, m)
+end
+
+a = B(initialize_matrix, 3, 3)
+println(construct(B(+, a, a)))
+
+# but:
+b = B(initialize_matrix, 3, 3)
+@show a === b
+println(construct(B(+, a, b)))
+# output
+
+call 3, 3
+[2 8 14; 4 10 16; 6 12 18]
+a === b = false
+call 3, 3
+call 3, 3
+[2 8 14; 4 10 16; 6 12 18]</code></pre><p>Nesting blueprints also works transparently with standard containers.</p><pre><code class="language-julia hljs">blueprint = B(sum, [a,a,a,b,b,b])
+construct(Dict(:a=&gt;a, :r =&gt; blueprint))
+# output
+call 3, 3
+call 3, 3
+Dict{Symbol, Matrix{Int64}} with 2 entries:
+  :a =&gt; [1 4 7; 2 5 8; 3 6 9]
+  :r =&gt; [6 24 42; 12 30 48; 18 36 54]</code></pre><p>This can be extended to custom types by implementing <a href="api.html#Blueprints.dependencies"><code>Blueprints.dependencies</code></a>.</p><h2 id="Serialization"><a class="docs-heading-anchor" href="#Serialization">Serialization</a><a id="Serialization-1"></a><a class="docs-heading-anchor-permalink" href="#Serialization" title="Permalink"></a></h2><p>Blueprints can be serialized to JSON.</p><pre><code class="language-julia hljs">using Blueprints
+using JSON
+
+blueprint = B(repeat, [1,2]; inner = 100)
+JSON.print(blueprint)
+
+# output
+
+{&quot;func&quot;:&quot;repeat&quot;,&quot;1&quot;:[1,2],&quot;inner&quot;:100}</code></pre><p>This is much more compact and readable than having the actual 200-element array in JSON.</p><h2 id="Caching"><a class="docs-heading-anchor" href="#Caching">Caching</a><a id="Caching-1"></a><a class="docs-heading-anchor-permalink" href="#Caching" title="Permalink"></a></h2><p>To cache any (intermediate) result, all you have to do is to replace <a href="api.html#Blueprints.B-Tuple{Any, Vararg{Any}}"><code>B</code></a> by <a href="api.html#Blueprints.CachedB-Tuple{Tuple{AbstractString, AbstractString}, Any, Vararg{Any}}"><code>CachedB</code></a> and specify a save location for a JLD2 cache file.</p><pre><code class="language-julia hljs"># cache_dir = ...
+
+x = CachedB(cache_dir * &quot;/cache.jld2&quot;, initialize_matrix, 3,3)
+y = CachedB(cache_dir * &quot;/cache.jld2&quot;, initialize_matrix, 3,1)
+result = B(sum, B(*,x,y))
+
+println(construct(result))
+println(construct(result))
+# output
+call 3, 3
+call 3, 1
+108
+108</code></pre><p>By default, results will be saved in the given file under a default group name based on the blueprint arguments (see <a href="api.html#Blueprints.default_groupname-Tuple{Any}"><code>Blueprints.default_groupname</code></a>). To specify the group name manually, use</p><pre><code class="language-julia hljs">x = CachedB((cache_dir * &quot;/cache.jld2&quot;, &quot;my_groupname&quot;), initialize_matrix, 3,3)
+construct(x)
+
+using JLD2
+y = jldopen(cache_dir * &quot;/cache.jld2&quot;, &quot;my_groupname&quot;)
+x == y
+
+# output
+true</code></pre><h2 id="Parallel-construction"><a class="docs-heading-anchor" href="#Parallel-construction">Parallel construction</a><a id="Parallel-construction-1"></a><a class="docs-heading-anchor-permalink" href="#Parallel-construction" title="Permalink"></a></h2><p>To parallelize the construction of heavy blueprints, you can pass an execution policy. For now, the only supported policy is <a href="api.html#Blueprints.MapPolicy"><code>MapPolicy</code></a>, which lets you specify a parallel map implementation of your choice.</p><pre><code class="language-julia hljs">blueprint = B(sum, [a,a,a,b,b,b])
+construct(Dict(:a=&gt;a, :r =&gt; blueprint); policy=MapPolicy(Threads.map))</code></pre></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="api.html">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Monday 10 March 2025 18:11">Monday 10 March 2025</span>. Using Julia version 1.10.8.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
