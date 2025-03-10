@@ -3,8 +3,7 @@
 Blueprints.jl implements serializable thunks that can be constructed in parallel using memoization and cached automatically.
 
 ## Example
-For example when this is useful, imagine the following situation:
-You are running a simulation code that takes a dictionary of parameters.
+For an example when this is useful, imagine the following situation: You are running a simulation code that takes a dictionary of parameters.
 
 ```julia
 parameters = Dict(
