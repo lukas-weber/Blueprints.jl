@@ -25,8 +25,24 @@ end
     @test sort.(Blueprints.trim_unused(deps, [3])[1]) == [[], [], [1, 2]]
 end
 
-@testset "Blueprint" begin
+@testset "dependencies" begin
+    objs = [
+        1,
+        [1, 2, 3],
+        Dict("a" => π, π => "b"),
+        (1, 2, 3),
+        (; a = π, b = exp(1)),
+        rand(4, 4),
+        [(1, Dict(3 => 4)), Dict([1, 2] => (; a = rand(4, 4)))],
+    ]
 
+    for obj in objs
+        deps, constructor = Blueprints.dependencies(obj)
+        @test obj == constructor(deps)
+    end
+end
+
+@testset "Blueprint" begin
     @test construct(fill(B(identity, 1), 3, 3)) == ones(3, 3)
 
     bps = map((test_func, blueprint_test_func)) do f

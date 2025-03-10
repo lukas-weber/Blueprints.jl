@@ -4,11 +4,6 @@ using Blueprints
 using JSON
 
 function JSON.lower(bp::Blueprint)
-    if !isnothing(bp.identifier)
-        return JSON.lower(
-            Blueprint(bp.identifier.func, bp.identifier.args, bp.identifier.params),
-        )
-    end
     return merge(
         Dict("func" => string(bp.func)),
         Dict(i => arg for (i, arg) in enumerate(bp.args)),
@@ -20,5 +15,7 @@ JSON.lower(bp::CachedBlueprint) = merge(
     Dict("filename" => bp.filename, "groupname" => bp.groupname),
     JSON.lower(bp.blueprint),
 )
+
+JSON.lower(bp::PhonyBlueprint) = JSON.lower(bp.blueprint)
 
 end
