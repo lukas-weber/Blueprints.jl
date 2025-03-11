@@ -1,6 +1,7 @@
 # Blueprints.jl
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://lukas-weber.github.io/Blueprints.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://lukas-weber.github.io/Blueprints.jl/dev)
+[![CI](https://github.com/lukas-weber/Blueprints.jl/actions/workflows/main.yml/badge.svg)](https://github.com/lukas-weber/Blueprints.jl/actions/workflows/main.yml)
 
 Blueprints.jl implements serializable thunks that can be constructed in parallel using memoization and cached automatically.
 
