@@ -36,7 +36,9 @@ function (@main)(args)
 end
 ```
 
-This defers the construction of the grid to later. Inside of `run_code` we have to replace `grid = parameters[:grid]` by `grid = construct(parameters[:grid])` to construct the blueprint. If the argument of `construct` does not contain any blueprints, it is a no-op. Serializing the blueprint with JSON.jl will yield
+This defers the construction of the grid to later. Inside of `run_code` we have to replace `grid = parameters[:grid]` by `grid = construct(parameters[:grid])` to construct the blueprint. If the argument of `construct` does not contain any blueprints, it is a no-op.
+
+Serializing the blueprint with JSON.jl will yield
 
 ```json
   {"func": "square_grid", "1": 100, "2": 100, "dx": 0.1}
@@ -56,4 +58,4 @@ The thing Blueprints tries to do lies somewhere inbetween two other great packag
 
 - **DrWatson.jl**: Is a collection of tools for scientific project management. Among many other things, it allows building parameterized and cached data processing workflows. Encoding the dependencies of workflows and their execution order requires some manual effort, however. Due to the very modular nature of DrWatson.jl, it can be used together with Blueprints.jl for that purpose.
 
-- **Dagger.jl**: Is a parallel computing framework. Its directional acyclic graph execution model resembles the one of Blueprints.jl very much but does not place a focus on serializability. Blueprints.jl, on the other hand, is much less ambitious in terms of parallelization. Blueprints.jl does not prescribe a specific parallelization framework and can make use of any parallel map implementation out of the box. In the future, support for more fine-grained construction using Dagger.jl may be implemented.
+- **Dagger.jl**: Is a parallel computing framework. Its directional acyclic graph execution model resembles the one of Blueprints.jl very much but does not place a focus on serializability. Blueprints.jl, on the other hand, is much less ambitious in terms of parallelization. Blueprints.jl does not prescribe a specific parallelization framework and can make use of any parallel map implementation out of the box. In the future, support for more fine-grained parallelization using Dagger.jl may be implemented.
