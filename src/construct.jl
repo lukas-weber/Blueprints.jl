@@ -52,7 +52,7 @@ function construct(
 
     if readonly && any(!isnothing, graph.caches)
         error(
-            "Attempted construct with readonly=true, but not all caches are built:\n$(join(filter(!isnothing, graph.caches)))",
+            "Attempted construct with readonly=true, but not all caches are built:\n$(join(filter(!isnothing, graph.caches),'\n'))",
         )
     end
 
