@@ -1,6 +1,6 @@
-# Blueprints.jl
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://lukas-weber.github.io/Blueprints.jl/stable)
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://lukas-weber.github.io/Blueprints.jl/dev)
+# ![Blueprints.jl](docs/src/assets/header.svg)
+[![Stable Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://lukas-weber.github.io/Blueprints.jl/stable)
+[![Development Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://lukas-weber.github.io/Blueprints.jl/dev)
 [![CI](https://github.com/lukas-weber/Blueprints.jl/actions/workflows/main.yml/badge.svg)](https://github.com/lukas-weber/Blueprints.jl/actions/workflows/main.yml)
 
 Blueprints.jl implements serializable thunks that can be constructed in parallel using memoization and cached automatically.
@@ -60,3 +60,7 @@ The thing Blueprints tries to do lies somewhere inbetween two other great packag
 - **DrWatson.jl**: Is a collection of tools for scientific project management. Among many other things, it allows building parameterized and cached data processing workflows. Encoding the dependencies of workflows and their execution order requires some manual effort, however. Due to the very modular nature of DrWatson.jl, it can be used together with Blueprints.jl for that purpose.
 
 - **Dagger.jl**: Is a parallel computing framework. Its directional acyclic graph execution model resembles the one of Blueprints.jl very much but does not place a focus on serializability. Blueprints.jl, on the other hand, is much less ambitious in terms of parallelization. Blueprints.jl does not prescribe a specific parallelization framework and can make use of any parallel map implementation out of the box. In the future, support for more fine-grained parallelization using Dagger.jl may be implemented.
+
+## Acknowledgements
+
+Thanks to [Ti Xu](https://tixuvisualgrocery.com/) for the logo.

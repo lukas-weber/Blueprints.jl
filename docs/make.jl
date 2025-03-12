@@ -2,7 +2,7 @@ using Documenter
 using Blueprints
 
 makedocs(
-    sitename = "Blueprints",
+    sitename = "Blueprints.jl",
     format = Documenter.HTML(prettyurls = false),
     modules = [Blueprints],
     warnonly = true,
