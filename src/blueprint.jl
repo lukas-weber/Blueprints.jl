@@ -130,10 +130,23 @@ function Base.getindex(bp::Blueprint, name::Symbol)
     # should we use a dict instead of vector of pairs?
     idx = findfirst(x -> first(x) == name, bp.params)
     if isnothing(idx)
-        throw(KeyError("no parameter named $name"))
+        throw(KeyError(name))
     end
 
     return bp.params[idx][2]
+end
+
+Base.setindex!(bp::Blueprint, value, idx::Integer) = setindex!(bp.args, value, idx)
+function Base.setindex!(bp::Blueprint, value, name::Symbol)
+    # should we use a dict instead of vector of pairs?
+    idx = findfirst(x -> first(x) == name, bp.params)
+    if isnothing(idx)
+        push!(bp.params, name => value)
+        return value
+    end
+
+    bp.params[idx] = name => value
+    return value
 end
 
 get_cache(x) = nothing
