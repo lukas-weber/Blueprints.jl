@@ -18,11 +18,21 @@ blueprint_test_func(args...; kwargs...) = B(test_func, args...; kwargs...)
     @test_throws DomainError Blueprints.topological_sort(cyclic_deps)
 end
 
+function canonicalize_deps(deps)
+    order = invperm(sortperm(deps))
+
+    out = deepcopy(deps)
+    for (i, o) in enumerate(order)
+        out[o] = sort(Int[order[d] for d in deps[i]])
+    end
+    return out
+end
+
 @testset "trim_unused" begin
     deps = [[2, 3, 3, 5], [], [2, 4], [], [2]]
 
     @test Blueprints.trim_unused(deps, [2]) == ([[]], [2])
-    @test sort.(Blueprints.trim_unused(deps, [3])[1]) == [[], [], [1, 2]]
+    @test canonicalize_deps(Blueprints.trim_unused(deps, [3])[1]) == [[], [], [1, 2]]
 end
 
 @testset "dependencies" begin
