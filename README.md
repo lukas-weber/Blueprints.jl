@@ -5,6 +5,14 @@
 
 Blueprints.jl implements serializable thunks that can be constructed in parallel using memoization and cached automatically.
 
+## Installation
+
+You can install this package from the Julia registry.
+
+```julia
+>] add Blueprints
+```
+
 ## Example
 For an example when this is useful, imagine the following situation: You are running a simulation code that takes a dictionary of parameters.
 
