@@ -10,7 +10,7 @@ Blueprints.jl implements serializable thunks that can be constructed in parallel
 You can install this package from the Julia registry.
 
 ```julia
->] add Blueprints
+julia>]add Blueprints
 ```
 
 ## Example
