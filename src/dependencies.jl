@@ -20,7 +20,7 @@ function dependencies(x::AbstractDict)
 
     function constructor(xs)
         keyxs = view(xs, 1:keycount)
-        valuexs = view(xs, keycount+1:length(xs))
+        valuexs = view(xs, (keycount+1):length(xs))
 
         return Dict((k => v for (k, v) in zip(keyxs, valuexs)))
     end
@@ -53,7 +53,7 @@ function dependencies(bp::Blueprint)
     f = bp.func
     function constructor(xs)
         args = view(xs, 1:nargs)
-        params = view(xs, nargs+1:length(xs))
+        params = view(xs, (nargs+1):length(xs))
 
         kwargs = Pair{Symbol,Any}[k => v for (k, v) in zip(param_keys, params)]
 
