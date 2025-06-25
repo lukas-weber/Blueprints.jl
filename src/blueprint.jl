@@ -24,6 +24,30 @@ end
 
 Base.hash(bp::Blueprint, h::UInt) = hash(bp.params, hash(bp.args, hash(bp.func, h)))
 
+Base.getindex(bp::Blueprint, idx::Integer) = bp.args[idx]
+function Base.getindex(bp::Blueprint, name::Symbol)
+    # should we use a dict instead of vector of pairs?
+    idx = findfirst(x -> first(x) == name, bp.params)
+    if isnothing(idx)
+        throw(KeyError(name))
+    end
+
+    return bp.params[idx][2]
+end
+
+Base.setindex!(bp::Blueprint, value, idx::Integer) = setindex!(bp.args, value, idx)
+function Base.setindex!(bp::Blueprint, value, name::Symbol)
+    # should we use a dict instead of vector of pairs?
+    idx = findfirst(x -> first(x) == name, bp.params)
+    if isnothing(idx)
+        push!(bp.params, name => value)
+        return value
+    end
+
+    bp.params[idx] = name => value
+    return value
+end
+
 """
     Blueprints.default_groupname(x) -> String
 
@@ -125,29 +149,8 @@ CachedB(filename::AbstractString, bp::Union{Blueprint,PhonyBlueprint}) =
     CachedBlueprint(filename, default_groupname(bp), bp)
 
 
-Base.getindex(bp::Blueprint, idx::Integer) = bp.args[idx]
-function Base.getindex(bp::Blueprint, name::Symbol)
-    # should we use a dict instead of vector of pairs?
-    idx = findfirst(x -> first(x) == name, bp.params)
-    if isnothing(idx)
-        throw(KeyError(name))
-    end
-
-    return bp.params[idx][2]
-end
-
-Base.setindex!(bp::Blueprint, value, idx::Integer) = setindex!(bp.args, value, idx)
-function Base.setindex!(bp::Blueprint, value, name::Symbol)
-    # should we use a dict instead of vector of pairs?
-    idx = findfirst(x -> first(x) == name, bp.params)
-    if isnothing(idx)
-        push!(bp.params, name => value)
-        return value
-    end
-
-    bp.params[idx] = name => value
-    return value
-end
+Base.getindex(bp::CachedBlueprint, idx) = getindex(bp.blueprint, idx)
+Base.setindex!(bp::CachedBlueprint, value, idx) = setindex!(bp.blueprint, value, idx)
 
 get_cache(x) = nothing
 get_cache(bp::CachedBlueprint) = (bp.filename, bp.groupname)
