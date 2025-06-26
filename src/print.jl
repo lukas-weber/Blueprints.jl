@@ -16,7 +16,7 @@ function Base.show(io::IO, ::MIME"text/plain", g::DependencyGraph)
     println(io, "DependencyGraph:")
     for (i, stage) in enumerate(stages)
         println(io, "Stage $i:")
-        for j in stage
+        for j in sort(stage)
             constructor = g.constructors[j]
             if constructor isa Returns
                 name = repr(constructor())
@@ -25,7 +25,6 @@ function Base.show(io::IO, ::MIME"text/plain", g::DependencyGraph)
             else
                 name = Base.return_types(constructor)[1]
             end
-
 
             args = "($(join(g.dependencies[j], ",")))"
             if args == "()"
