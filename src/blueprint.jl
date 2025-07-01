@@ -96,6 +96,9 @@ end
 Base.hash(bp::PhonyBlueprint, h::UInt) = hash(bp.blueprint, h)
 default_groupname(bp::PhonyBlueprint) = default_groupname(bp.blueprint)
 
+Base.getindex(bp::PhonyBlueprint, idx) = getindex(bp.blueprint, idx)
+Base.setindex!(bp::PhonyBlueprint, value, idx) = setindex!(bp.blueprint, value, idx)
+
 """
     CachedBlueprint
 
