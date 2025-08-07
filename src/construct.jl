@@ -12,8 +12,12 @@ end
 function construct_with_policy(policy::MapPolicy, graph::DependencyGraph; copy = true)
     stages = topological_sort(graph.dependencies)
     results = Vector{Any}(undef, length(graph.constructors))
+    lifetimes = [
+        findlast(stage->any(deps->i in deps, graph.dependencies[stage]), stages) for
+        i in eachindex(results)
+    ]
 
-    for stage in stages
+    for (t, stage) in enumerate(stages)
         constructors = graph.constructors[stage]
         args = [results[graph.dependencies[i]] for i in stage]
 
@@ -24,6 +28,13 @@ function construct_with_policy(policy::MapPolicy, graph::DependencyGraph; copy =
         view(results, stage) .= policy.map(fas -> fas[1](fas[2]), zip(constructors, args))
 
         write_caches(graph.caches[stage], results[stage])
+
+        # unreference unneeded results
+        for i in eachindex(results)
+            if !isnothing(lifetimes[i]) && t >= lifetimes[i]
+                results[i] = nothing
+            end
+        end
     end
 
     return results[stages[end][end]]
