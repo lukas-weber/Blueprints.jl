@@ -35,28 +35,65 @@ function make_dependency_graph!(graph::DependencyGraph, elements, x)
     return newidx
 end
 
-function topological_sort(deps::AbstractVector{<:AbstractVector})
-    stages = Vector{UInt64}[]
 
-    unassigned_vertices = Set(1:length(deps))
+function topological_sort(incoming::AbstractVector{<:AbstractVector})
+    ordering = zeros(Int, length(incoming))
+
+    unassigned_vertices = Set(1:length(incoming))
+    idx = 0
     while length(unassigned_vertices) > 0
-        push!(
-            stages,
-            [
-                result for
-                result in unassigned_vertices if !any(in(unassigned_vertices), deps[result])
-            ],
-        )
-
-        if isempty(stages[end])
-            throw(DomainError(deps, "attempted topological sort on a cyclic graph."))
+        vnext = nothing
+        maxscore = nothing
+        for v in unassigned_vertices
+            if !any(in(unassigned_vertices), incoming[v])
+                score = sort!(ordering[incoming[v]], rev = true)
+                if isnothing(maxscore) || score > maxscore
+                    vnext = v
+                    maxscore = score
+                end
+            end
         end
 
-        for result in stages[end]
-            delete!(unassigned_vertices, result)
+        if isnothing(vnext)
+            throw(DomainError(incoming, "attempted topological sort on a cyclic graph."))
         end
+
+
+        ordering[vnext] = idx += 1
+        delete!(unassigned_vertices, vnext)
     end
-    return stages
+    return ordering
+end
+
+
+# Coffman-Graham algorithm
+function schedule_stages(
+    incoming::AbstractVector{<:AbstractVector},
+    maxwidth::Integer = length(incoming),
+)
+    ordering = topological_sort(incoming)
+
+    outgoing = [findall(d->in(i, d), incoming) for i in eachindex(incoming)]
+    levels = zero(ordering)
+    stages = Vector{UInt64}[]
+    for v in sortperm(ordering, rev = true)
+        minlevel = maximum(view(levels, outgoing[v]), init = 0) + 1
+        stageidx = findfirst(
+            stage->length(stage) < maxwidth,
+            view(stages, minlevel:length(stages)),
+        )
+        if isnothing(stageidx)
+            push!(stages, UInt64[v])
+            levels[v] = length(stages)
+        else
+            stageidx += minlevel-1
+            push!(stages[stageidx], v)
+            levels[v] = stageidx
+        end
+        @assert !any(in(stages[levels[v]]), incoming[v])
+    end
+
+    return reverse(stages)
 end
 
 function use_cache_loads(graph::DependencyGraph)

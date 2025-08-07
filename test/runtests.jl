@@ -9,13 +9,24 @@ blueprint_test_func(args...; kwargs...) = B(test_func, args...; kwargs...)
 
 @testset "topological_sort" begin
     deps = [[2, 3, 3, 5], [], [2, 4], [], [2]]
-    stages = [[2, 4], [3, 5], [1]]
-    @test sort.(Blueprints.topological_sort(deps)) == stages
-    @test Blueprints.topological_sort(Vector[]) == []
-    @test Blueprints.topological_sort([[]]) == [[1]]
 
+    ordering = Blueprints.topological_sort(deps)
+    @test all(all(ordering[i] .> ordering[deps[i]]) for i in eachindex(deps))
     cyclic_deps = [[2], [1]]
     @test_throws DomainError Blueprints.topological_sort(cyclic_deps)
+end
+
+@testset "schedule_stages" begin
+    deps = [[2, 3, 3, 5], [], [2, 4], [], [2]]
+    stages = [[2, 4], [3, 5], [1]]
+    @test sort.(Blueprints.schedule_stages(deps)) == stages
+    @test Blueprints.schedule_stages(Vector[]) == []
+    @test Blueprints.schedule_stages([[]]) == [[1]]
+
+    deps = vcat(fill(Int[], 40), map(x->[x], 1:40), [collect(1:80)])
+    stages = Blueprints.schedule_stages(deps, 7)
+    @test all(length.(stages) .<= 7)
+
 end
 
 function canonicalize_deps(deps)
@@ -53,16 +64,21 @@ end
 end
 
 @testset "Blueprint" begin
-    @test construct(fill(B(identity, 1), 3, 3)) == ones(3, 3)
+    @testset for maxconcurrency = 1:5
+        @test construct(
+            fill(B(identity, 1), 3, 3),
+            policy = MapPolicy(map; maxconcurrency),
+        ) == ones(3, 3)
 
-    bps = map((test_func, blueprint_test_func)) do f
-        bp = f(1, 2, 3; a = 9)
-        bp2 = f(bp, [bp, bp, 1], 2)
-        bp3 = f(; c = Dict(bp => bp2))
-        return f(bp3; c = bp3)
+        bps = map((test_func, blueprint_test_func)) do f
+            bp = f(1, 2, 3; a = 9)
+            bp2 = f(bp, [bp, bp, 1], 2)
+            bp3 = f(; c = Dict(bp => bp2))
+            return f(bp3; c = bp3)
+        end
+
+        @test bps[1] == construct(bps[2], policy = MapPolicy(map; maxconcurrency))
     end
-
-    @test bps[1] == construct(bps[2])
 end
 
 @testset "CachedBlueprint" begin

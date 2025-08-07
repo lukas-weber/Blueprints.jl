@@ -1,16 +1,23 @@
 abstract type AbstractExecutionPolicy end
 
 """
-    MapPolicy(map_func)
+    MapPolicy(map_func [; maxconcurrency=nothing])
 
 Simple parallel execution policy that allows specifying an implementation of parallel map. In this way, it is possible to construct blueprints either using threads or distributed workflows.
+
+`maxconcurrency` allows setting a maximum number items that `map_func` is called on at once. Use this to limit memory consumption or encourage early caching. By default, there is no limit.
 """
 struct MapPolicy <: AbstractExecutionPolicy
     map::Any
+    maxconcurrency::Union{Int,Nothing}
 end
+MapPolicy(map_func; maxconcurrency = nothing) = MapPolicy(map_func, maxconcurrency)
 
 function construct_with_policy(policy::MapPolicy, graph::DependencyGraph; copy = true)
-    stages = topological_sort(graph.dependencies)
+    stages = schedule_stages(
+        graph.dependencies,
+        something(policy.maxconcurrency, length(graph.dependencies)),
+    )
     results = Vector{Any}(undef, length(graph.constructors))
     lifetimes = [
         findlast(stage->any(deps->i in deps, graph.dependencies[stage]), stages) for

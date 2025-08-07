@@ -11,7 +11,7 @@ function Base.show(io::IO, ::MIME"text/plain", bp::CachedBlueprint)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", g::DependencyGraph)
-    stages = topological_sort(g.dependencies)
+    stages = schedule_stages(g.dependencies)
 
     println(io, "DependencyGraph:")
     for (i, stage) in enumerate(stages)
