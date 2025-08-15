@@ -1,7 +1,7 @@
 name = "Blueprints"
 uuid = "0e25da23-48ae-47a7-b185-c5bd5c070cab"
 authors = ["Lukas Weber <49278367+lukas-weber@users.noreply.github.com>"]
-version = "0.1.1"
+version = "0.2.0"
 
 [deps]
 CodecBzip2 = "523fee87-0ab8-5b00-afb7-3ecf72e48cfd"
