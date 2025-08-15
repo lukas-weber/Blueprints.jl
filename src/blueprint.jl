@@ -120,6 +120,18 @@ Base.hash(bp::CachedBlueprint, h::UInt) =
 default_groupname(bp::CachedBlueprint) = default_groupname(bp.blueprint)
 
 """
+    is_cached(bp::CachedBlueprint)
+
+Returns true if the cache of `bp` is populated.
+"""
+function is_cached(bp::CachedBlueprint)
+    graph = use_cache_loads(DependencyGraph(bp))
+    graph = trim_unused(graph, length(graph.dependencies))
+
+    return all(isnothing, graph.caches)
+end
+
+"""
     CachedB(filename, func, args...; params...)
     CachedB((filename, groupname), func, args...; params...)
 
