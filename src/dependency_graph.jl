@@ -60,12 +60,12 @@ function topological_sort(
 
 
     idx = 0
-    score_buf = zeros(Int, maximum(length, incoming))
+    score_buf = zeros(Int, maximum(length, incoming;init=1))
     maxscore_buf = similar(score_buf)
     while !isempty(active)
         vnext = nothing
         maxscore = nothing
-        for v in active
+        @inbounds for v in active
             mask = eachindex(incoming[v])
             score = (view(score_buf, mask), v)
             score[1] .= @view ordering[incoming[v]]
@@ -78,9 +78,6 @@ function topological_sort(
             end
         end
 
-        if ordering[vnext] != 0
-            throw(DomainError(incoming, "attempted topological sort on a cyclic graph."))
-        end
         ordering[vnext] = idx += 1
 
         for v in outgoing[vnext]
@@ -90,6 +87,9 @@ function topological_sort(
         end
 
         delete!(active, vnext)
+    end
+    if any(==(0), ordering)
+        throw(DomainError(incoming, "attempted topological sort on a cyclic graph."))
     end
     return ordering
 end

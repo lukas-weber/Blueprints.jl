@@ -57,14 +57,14 @@ end
 @testset "topological_sort" begin
     deps = [[2, 3, 3, 5], [], [2, 4], [], [2]]
 
-    ordering = Blueprints.topological_sort(deps)
+    ordering = Blueprints.topological_sort(deps, Blueprints.construct_outgoing(deps))
     @test all(all(ordering[i] .> ordering[deps[i]]) for i in eachindex(deps))
 
     deps = random_directed_acyclic_graph(100, 5)
-    @test Blueprints.topological_sort(deps) == topological_sort_naive(deps)
+    @test Blueprints.topological_sort(deps, Blueprints.construct_outgoing(deps)) == topological_sort_naive(deps)
 
     cyclic_deps = [[2], [1]]
-    @test_throws DomainError Blueprints.topological_sort(cyclic_deps)
+    @test_throws DomainError Blueprints.topological_sort(cyclic_deps, Blueprints.construct_outgoing(cyclic_deps))
 end
 
 @testset "schedule_stages" begin
