@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- Optimized the topological sorting algorithm making scheduling of large blueprints much faster
+
 ## 0.2.0 - 2025-08-15
 
 ### Added

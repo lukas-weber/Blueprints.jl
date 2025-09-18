@@ -7,11 +7,62 @@ using Carlo.JobTools
 test_func(args...; kwargs...) = (args, kwargs)
 blueprint_test_func(args...; kwargs...) = B(test_func, args...; kwargs...)
 
+function random_directed_acyclic_graph(items, maximum_dependencies)
+    ordered = Vector{Int}[
+        i == 1 ? Int[] : unique(rand(1:i-1, rand(1:maximum_dependencies))) for i = 1:items
+    ]
+    p = randperm(items)
+
+    for o in ordered
+        for i in eachindex(o)
+            o[i] = p[o[i]]
+        end
+    end
+
+    disordered = similar(ordered)
+    disordered[p] .= ordered
+
+    return disordered
+end
+
+
+function topological_sort_naive(incoming)
+    ordering = zeros(Int, length(incoming))
+
+    unassigned_vertices = Set(1:length(incoming))
+    idx = 0
+    while length(unassigned_vertices) > 0
+        vnext = nothing
+        maxscore = nothing
+        for v in unassigned_vertices
+            if !any(in(unassigned_vertices), incoming[v])
+                score = (sort!(ordering[incoming[v]], rev = true), v)
+                if isnothing(maxscore) || score > maxscore
+                    vnext = v
+                    maxscore = score
+                end
+            end
+        end
+
+        if isnothing(vnext)
+            throw(DomainError(incoming, "attempted topological sort on a cyclic graph."))
+        end
+
+        ordering[vnext] = idx += 1
+        delete!(unassigned_vertices, vnext)
+    end
+    return ordering
+end
+
 @testset "topological_sort" begin
     deps = [[2, 3, 3, 5], [], [2, 4], [], [2]]
 
     ordering = Blueprints.topological_sort(deps)
     @test all(all(ordering[i] .> ordering[deps[i]]) for i in eachindex(deps))
+
+    deps = random_directed_acyclic_graph(100, 5)
+    @test Blueprints.topological_sort(deps) == topological_sort_naive(deps)
+
     cyclic_deps = [[2], [1]]
     @test_throws DomainError Blueprints.topological_sort(cyclic_deps)
 end
@@ -23,7 +74,7 @@ end
     @test Blueprints.schedule_stages(Vector[]) == []
     @test Blueprints.schedule_stages([[]]) == [[1]]
 
-    deps = vcat(fill(Int[], 40), map(x->[x], 1:40), [collect(1:80)])
+    deps = vcat(fill(Int[], 40), map(x -> [x], 1:40), [collect(1:80)])
     stages = Blueprints.schedule_stages(deps, 7)
     @test all(length.(stages) .<= 7)
 

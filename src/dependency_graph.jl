@@ -35,32 +35,61 @@ function make_dependency_graph!(graph::DependencyGraph, elements, x)
     return newidx
 end
 
+function construct_outgoing(incoming)
+    outgoing = [Int[] for _ in incoming]
+    for (i, v) in enumerate(incoming)
+        for dep in v
+            push!(outgoing[dep], i)
+        end
+    end
+    return outgoing
+end
 
-function topological_sort(incoming::AbstractVector{<:AbstractVector})
+function topological_sort(
+    incoming::AbstractVector{<:AbstractVector},
+    outgoing::AbstractVector{<:AbstractVector},
+)
     ordering = zeros(Int, length(incoming))
 
-    unassigned_vertices = Set(1:length(incoming))
+    active = Set{Int}()
+    for (i, v) in enumerate(incoming)
+        if isempty(v)
+            push!(active, i)
+        end
+    end
+
+
     idx = 0
-    while length(unassigned_vertices) > 0
+    score_buf = zeros(Int, maximum(length, incoming))
+    maxscore_buf = similar(score_buf)
+    while !isempty(active)
         vnext = nothing
         maxscore = nothing
-        for v in unassigned_vertices
-            if !any(in(unassigned_vertices), incoming[v])
-                score = sort!(ordering[incoming[v]], rev = true)
-                if isnothing(maxscore) || score > maxscore
-                    vnext = v
-                    maxscore = score
-                end
+        for v in active
+            mask = eachindex(incoming[v])
+            score = (view(score_buf, mask), v)
+            score[1] .= @view ordering[incoming[v]]
+            sort!(score[1], rev = true)
+
+            if isnothing(maxscore) || score > maxscore
+                vnext = v
+                maxscore_buf[mask] .= score[1]
+                maxscore = (view(maxscore_buf, mask), v)
             end
         end
 
-        if isnothing(vnext)
+        if ordering[vnext] != 0
             throw(DomainError(incoming, "attempted topological sort on a cyclic graph."))
         end
-
-
         ordering[vnext] = idx += 1
-        delete!(unassigned_vertices, vnext)
+
+        for v in outgoing[vnext]
+            if all(ordering[dep] != 0 for dep in incoming[v])
+                push!(active, v)
+            end
+        end
+
+        delete!(active, vnext)
     end
     return ordering
 end
@@ -71,26 +100,25 @@ function schedule_stages(
     incoming::AbstractVector{<:AbstractVector},
     maxwidth::Integer = length(incoming),
 )
-    ordering = topological_sort(incoming)
+    outgoing = construct_outgoing(incoming)
+    ordering = topological_sort(incoming, outgoing)
 
-    outgoing = [findall(d->in(i, d), incoming) for i in eachindex(incoming)]
     levels = zero(ordering)
     stages = Vector{UInt64}[]
     for v in sortperm(ordering, rev = true)
         minlevel = maximum(view(levels, outgoing[v]), init = 0) + 1
         stageidx = findfirst(
-            stage->length(stage) < maxwidth,
+            stage -> length(stage) < maxwidth,
             view(stages, minlevel:length(stages)),
         )
         if isnothing(stageidx)
             push!(stages, UInt64[v])
             levels[v] = length(stages)
         else
-            stageidx += minlevel-1
+            stageidx += minlevel - 1
             push!(stages[stageidx], v)
             levels[v] = stageidx
         end
-        @assert !any(in(stages[levels[v]]), incoming[v])
     end
 
     return reverse(stages)

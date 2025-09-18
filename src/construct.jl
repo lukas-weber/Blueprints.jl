@@ -20,7 +20,7 @@ function construct_with_policy(policy::MapPolicy, graph::DependencyGraph; copy =
     )
     results = Vector{Any}(undef, length(graph.constructors))
     lifetimes = [
-        findlast(stage->any(deps->i in deps, graph.dependencies[stage]), stages) for
+        findlast(stage -> any(deps -> i in deps, graph.dependencies[stage]), stages) for
         i in eachindex(results)
     ]
 
