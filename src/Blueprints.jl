@@ -5,6 +5,7 @@ export Blueprint, CachedBlueprint, PhonyBlueprint
 
 using JLD2
 using CodecBzip2
+using DataStructures
 
 const MAX_CACHE_GROUPNAME_LENGTH = 256
 

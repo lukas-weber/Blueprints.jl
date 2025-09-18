@@ -51,44 +51,28 @@ function topological_sort(
 )
     ordering = zeros(Int, length(incoming))
 
-    active = Set{Int}()
-    for (i, v) in enumerate(incoming)
-        if isempty(v)
-            push!(active, i)
+    active = BinaryMaxHeap{Tuple{Vector{Int},Int}}()
+    for (i, deps) in enumerate(incoming)
+        if isempty(deps)
+            push!(active, ([], i))
+            ordering[i] = -1
         end
     end
 
-
     idx = 0
-    score_buf = zeros(Int, maximum(length, incoming;init=1))
-    maxscore_buf = similar(score_buf)
     while !isempty(active)
-        vnext = nothing
-        maxscore = nothing
-        @inbounds for v in active
-            mask = eachindex(incoming[v])
-            score = (view(score_buf, mask), v)
-            score[1] .= @view ordering[incoming[v]]
-            sort!(score[1], rev = true)
-
-            if isnothing(maxscore) || score > maxscore
-                vnext = v
-                maxscore_buf[mask] .= score[1]
-                maxscore = (view(maxscore_buf, mask), v)
-            end
-        end
+        _, vnext = pop!(active)
 
         ordering[vnext] = idx += 1
 
         for v in outgoing[vnext]
-            if all(ordering[dep] != 0 for dep in incoming[v])
-                push!(active, v)
+            if all(ordering[dep] > 0 for dep in incoming[v]) && ordering[v] == 0
+                push!(active, (sort!(ordering[incoming[v]], rev = true), v))
+                ordering[v] = -1 # prevent readding to heap
             end
         end
-
-        delete!(active, vnext)
     end
-    if any(==(0), ordering)
+    if idx != length(ordering)
         throw(DomainError(incoming, "attempted topological sort on a cyclic graph."))
     end
     return ordering
