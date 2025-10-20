@@ -36,7 +36,7 @@ function topological_sort_naive(incoming)
         maxscore = nothing
         for v in unassigned_vertices
             if !any(in(unassigned_vertices), incoming[v])
-                score = (sort!(ordering[incoming[v]], rev = true), v)
+                score = (sort!(ordering[incoming[v]]), v)
                 if isnothing(maxscore) || score > maxscore
                     vnext = v
                     maxscore = score
@@ -58,11 +58,11 @@ end
     deps = [[2, 3, 3, 5], [], [2, 4], [], [2]]
 
     ordering = Blueprints.topological_sort(deps, Blueprints.construct_outgoing(deps))
-    @test all(all(ordering[i] .> ordering[deps[i]]) for i in eachindex(deps))
+    @test all(all(ordering[i] .< ordering[deps[i]]) for i in eachindex(deps))
 
     deps = random_directed_acyclic_graph(100, 5)
     @test Blueprints.topological_sort(deps, Blueprints.construct_outgoing(deps)) ==
-          topological_sort_naive(deps)
+          topological_sort_naive(Blueprints.construct_outgoing(deps))
 
     cyclic_deps = [[2], [1]]
     @test_throws DomainError Blueprints.topological_sort(

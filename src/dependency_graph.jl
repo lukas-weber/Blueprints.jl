@@ -52,7 +52,7 @@ function topological_sort(
     ordering = zeros(Int, length(incoming))
 
     active = BinaryMaxHeap{Tuple{Vector{Int},Int}}()
-    for (i, deps) in enumerate(incoming)
+    for (i, deps) in enumerate(outgoing)
         if isempty(deps)
             push!(active, ([], i))
             ordering[i] = -1
@@ -65,15 +65,15 @@ function topological_sort(
 
         ordering[vnext] = idx += 1
 
-        for v in outgoing[vnext]
-            if all(ordering[dep] > 0 for dep in incoming[v]) && ordering[v] == 0
-                push!(active, (sort!(ordering[incoming[v]], rev = true), v))
+        for v in incoming[vnext]
+            if all(ordering[dep] > 0 for dep in outgoing[v]) && ordering[v] == 0
+                push!(active, (sort!(ordering[outgoing[v]]), v))
                 ordering[v] = -1 # prevent readding to heap
             end
         end
     end
     if idx != length(ordering)
-        throw(DomainError(incoming, "attempted topological sort on a cyclic graph."))
+        throw(DomainError(outgoing, "attempted topological sort on a cyclic graph."))
     end
     return ordering
 end
@@ -90,7 +90,7 @@ function schedule_stages(
     levels = zero(ordering)
     stages = Vector{UInt64}[]
     for v in sortperm(ordering, rev = true)
-        minlevel = maximum(view(levels, outgoing[v]), init = 0) + 1
+        minlevel = maximum(view(levels, incoming[v]), init = 0) + 1
         stageidx = findfirst(
             stage -> length(stage) < maxwidth,
             view(stages, minlevel:length(stages)),
@@ -105,7 +105,7 @@ function schedule_stages(
         end
     end
 
-    return reverse(stages)
+    return stages
 end
 
 function use_cache_loads(graph::DependencyGraph)
