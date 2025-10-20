@@ -158,8 +158,10 @@ CachedB(filename::AbstractString, func, args...; params...) = CachedBlueprint(
 
 Promotes a regular `blueprint` into a cached blueprint.
 """
-CachedB((filename, groupname)::NTuple{2,AbstractString}, bp::Blueprint) =
-    CachedBlueprint(filename, groupname, Blueprint(bp.func, bp.args, bp.params))
+CachedB(
+    (filename, groupname)::NTuple{2,AbstractString},
+    bp::Union{Blueprint,PhonyBlueprint},
+) = CachedBlueprint(filename, groupname, bp)
 CachedB(filename::AbstractString, bp::Union{Blueprint,PhonyBlueprint}) =
     CachedBlueprint(filename, default_groupname(bp), bp)
 
