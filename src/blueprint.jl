@@ -175,8 +175,7 @@ get_cache(bp::CachedBlueprint) = (bp.filename, bp.groupname)
 function open_cachefiles(func, caches, mode; kwargs...)
     cachefiles = [cache[1] for cache in caches if !isnothing(cache)]
     files = Dict(
-        filename => jldopen(filename, mode, compress = Bzip2Compressor(); kwargs...) for
-        filename in unique(cachefiles)
+        filename => jldopen(filename, mode; kwargs...) for filename in unique(cachefiles)
     )
 
     try
