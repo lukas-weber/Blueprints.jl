@@ -4,6 +4,12 @@ function Base.show(io::IO, ::MIME"text/plain", bp::Blueprint)
     show(io, MIME"text/plain"(), graph)
 end
 
+function Base.show(io::IO, ::MIME"text/plain", bp::PhonyBlueprint)
+    graph = DependencyGraph(bp.blueprint)
+    print(io, "(Phony) Blueprint with ")
+    show(io, MIME"text/plain"(), graph)
+end
+
 function Base.show(io::IO, ::MIME"text/plain", bp::CachedBlueprint)
     graph = DependencyGraph(bp)
     print(io, "CachedBlueprint saving to\n$(bp.filename):/$(bp.groupname)\nwith ")
