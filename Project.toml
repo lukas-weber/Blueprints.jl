@@ -16,7 +16,7 @@ BlueprintsCarloExt = "Carlo"
 BlueprintsJSONExt = "JSON"
 
 [compat]
-Carlo = "0.2.3"
+Carlo = "0.2.3 - 0.3"
 DataStructures = "0.19.1"
 JLD2 = "0.6"
 JSON = "1"
