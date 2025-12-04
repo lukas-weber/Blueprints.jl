@@ -16,6 +16,6 @@ JSON.lower(bp::CachedBlueprint) = merge(
     JSON.lower(bp.blueprint),
 )
 
-JSON.lower(bp::PhonyBlueprint) = JSON.lower(bp.blueprint)
+JSON.lower(bp::PhonyBlueprint) = JSON.lower(bp.standin_blueprint)
 
 end

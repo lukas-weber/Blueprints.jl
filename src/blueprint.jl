@@ -1,3 +1,5 @@
+abstract type AbstractBlueprint end
+
 """
     Blueprint
 
@@ -16,7 +18,7 @@ julia> blueprint[:inner]
 
 See also: [`B`](@ref), [`construct`](@ref).
 """
-struct Blueprint
+struct Blueprint <: AbstractBlueprint
     func::Any
     args::Vector
     params::Vector{Pair{Symbol,Any}}
@@ -81,23 +83,22 @@ Defines a blueprint for the evaluation of `func(args...; params...)`.
 B(func, args...; params...) = Blueprint(func, collect(args), collect(params))
 
 """
-    Blueprints.PhonyBlueprint(constructor, dependencies, blueprint::Blueprint)
+    PhonyBlueprint(blueprint::AbstractBlueprint, standin_blueprint::AbstractBlueprint)
 
-Looks and serializes like `blueprint`, but actually executes `constructor(dependencies)`.
+Looks and serializes like `standin_blueprint`, but actually executes `constructor(blueprint)`.
 
-This is useful mostly in cases where your calculation serializes in a very inefficient way or contains closures. In those cases, you can (at your own risk) mask the calculation behind a *stand-in* `blueprint` so that the result is still pure in terms of the arguments and parameters of blueprint.
+This is useful mostly in cases where your calculation serializes in a very inefficient way or contains closures. In those cases, you can (at your own risk) mask the calculation behind a *stand-in* blueprint so that the result is still pure in terms of the arguments and parameters of blueprint.
 """
-struct PhonyBlueprint
-    constructor::Any
-    dependencies::Vector
-    blueprint::Blueprint
+struct PhonyBlueprint{BP1<:AbstractBlueprint,BP2<:AbstractBlueprint} <: AbstractBlueprint
+    blueprint::BP1
+    standin_blueprint::BP2
 end
 
-Base.hash(bp::PhonyBlueprint, h::UInt) = hash(bp.blueprint, h)
-default_groupname(bp::PhonyBlueprint) = default_groupname(bp.blueprint)
+Base.hash(bp::PhonyBlueprint, h::UInt) = hash(bp.standin_blueprint, h)
+default_groupname(bp::PhonyBlueprint) = default_groupname(bp.standin_blueprint)
 
-Base.getindex(bp::PhonyBlueprint, idx) = getindex(bp.blueprint, idx)
-Base.setindex!(bp::PhonyBlueprint, value, idx) = setindex!(bp.blueprint, value, idx)
+Base.getindex(bp::PhonyBlueprint, idx) = getindex(bp.standin_blueprint, idx)
+Base.setindex!(bp::PhonyBlueprint, value, idx) = setindex!(bp.standin_blueprint, value, idx)
 
 """
     CachedBlueprint
@@ -109,10 +110,10 @@ A cached blueprint, defined using [`CachedB`](@ref).
 - `groupname`: the path of the object within the file.
 - `blueprint`: the blueprint that is to be cached
 """
-struct CachedBlueprint
+struct CachedBlueprint{BP<:AbstractBlueprint} <: AbstractBlueprint
     filename::String
     groupname::String
-    blueprint::Union{Blueprint,PhonyBlueprint}
+    blueprint::BP
 end
 
 Base.hash(bp::CachedBlueprint, h::UInt) =
@@ -151,6 +152,7 @@ CachedB(filename::AbstractString, func, args...; params...) = CachedBlueprint(
     default_groupname(func, args, params),
     Blueprint(func, collect(args), collect(params)),
 )
+get_cache(bp::PhonyBlueprint) = get_cache(bp.blueprint)
 
 """
     CachedB(filename, blueprint)
@@ -158,11 +160,9 @@ CachedB(filename::AbstractString, func, args...; params...) = CachedBlueprint(
 
 Promotes a regular `blueprint` into a cached blueprint.
 """
-CachedB(
-    (filename, groupname)::NTuple{2,AbstractString},
-    bp::Union{Blueprint,PhonyBlueprint},
-) = CachedBlueprint(filename, groupname, bp)
-CachedB(filename::AbstractString, bp::Union{Blueprint,PhonyBlueprint}) =
+CachedB((filename, groupname)::NTuple{2,AbstractString}, bp::AbstractBlueprint) =
+    CachedBlueprint(filename, groupname, bp)
+CachedB(filename::AbstractString, bp::AbstractBlueprint) =
     CachedBlueprint(filename, default_groupname(bp), bp)
 
 

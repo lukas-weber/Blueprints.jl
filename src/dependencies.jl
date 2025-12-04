@@ -62,4 +62,4 @@ function dependencies(bp::Blueprint)
     return deps, constructor
 end
 
-dependencies(bp::PhonyBlueprint) = bp.dependencies, bp.constructor
+dependencies(bp::PhonyBlueprint) = dependencies(bp.blueprint)
