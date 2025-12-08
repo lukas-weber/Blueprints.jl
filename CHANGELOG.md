@@ -1,9 +1,13 @@
 # Changelog
 
-## [Unreleased]
+## 0.3.0 - 2025-12-08
 
 ### Fixed
 - Optimized the topological sorting algorithm making scheduling of large blueprints much faster
+- Fixed incorrect behavior when combining `CachedB((filename, groupname), ::PhonyBlueprint)`
+### Changed
+- `CachedBlueprint` is no longer bzip2 compressed by default. This should not break compatibility.
+- Changed the API of `PhonyBlueprint`, instead of the constructor `PhonyBlueprint(constructor, dependencies, standin_blueprint`, it is now `PhonyBlueprint(blueprint, standin_blueprint)`.
 
 ## 0.2.0 - 2025-08-15
 
