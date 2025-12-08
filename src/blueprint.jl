@@ -142,8 +142,8 @@ On [`construct`](@ref), the result is written to the JLD2 file called `filename`
 
 If `groupname` is omitted, a default group name is chosen using [`default_groupname`](@ref).
 
-!!! note
-    Using the default group name only works if all constituents of the blueprint have a `repr` that remains stable between Julia sessions. This is not true for closures.
+!!! danger
+    Using the default group name is very brittle and therefore discouraged. Many small implementation details will change the the default groupname and therefore cause expensive calculations to become unreachable. Suggestions for solving this problem are welcome, otherwise the feature may be deprecated in a future release.
 """
 CachedB((filename, groupname)::NTuple{2,AbstractString}, func, args...; params...) =
     CachedBlueprint(filename, groupname, Blueprint(func, collect(args), collect(params)))
