@@ -1,6 +1,6 @@
 name = "Blueprints"
 uuid = "0e25da23-48ae-47a7-b185-c5bd5c070cab"
-version = "0.2.0"
+version = "0.3.0"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
